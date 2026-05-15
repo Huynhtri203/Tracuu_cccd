@@ -1,0 +1,580 @@
+  <!DOCTYPE html>
+  <html lang="vi">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tra cứu thông tin Công dân</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red: #C0392B;
+      --red-dark: #922B21;
+      --red-light: #FADBD8;
+      --gold: #D4A017;
+      --gold-light: #FEF9E7;
+      --bg: #F5F5F0;
+      --surface: #FFFFFF;
+      --text: #1A1A1A;
+      --text-muted: #6B6B6B;
+      --border: #E0DDD5;
+      --shadow: 0 2px 16px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px 48px;
+    }
+
+    /* Header */
+    .header {
+      width: 100%;
+      background: var(--red-dark);
+      padding: 0;
+      margin-bottom: 0;
+    }
+    .header-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 20px 24px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .emblem {
+      width: 52px; height: 52px;
+      background: var(--gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .header-text h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .03em;
+      line-height: 1.3;
+    }
+    .header-text p {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 2px;
+    }
+
+    /* Stripe */
+    .stripe {
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--gold) 0%, #F0C040 50%, var(--gold) 100%);
+    }
+
+    /* Main card */
+    .container {
+      width: 100%;
+      max-width: 760px;
+      margin-top: 28px;
+    }
+
+    .search-card {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 28px 28px 24px;
+      margin-bottom: 20px;
+    }
+
+    .search-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-row input {
+      flex: 1;
+      height: 48px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0 16px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: .12em;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s;
+      background: #FAFAF8;
+    }
+    .search-row input:focus {
+      border-color: var(--red);
+      background: #fff;
+    }
+    .search-row input::placeholder { color: #bbb; letter-spacing: .04em; font-weight: 400; }
+
+    .btn-search {
+      height: 48px;
+      padding: 0 24px;
+      background: var(--red);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, transform .1s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-search:hover { background: var(--red-dark); }
+    .btn-search:active { transform: scale(0.97); }
+    .btn-search svg { width: 17px; height: 17px; }
+
+    .err-msg {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--red);
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    .err-msg svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    /* Hint */
+    .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    /* Loading */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result card */
+    .result-card {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: none;
+      animation: fadeUp .3s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      background: var(--red);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .avatar {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .result-header-text h2 {
+      font-size: 16px; font-weight: 700; color: #fff;
+    }
+    .result-header-text p {
+      font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px;
+    }
+
+    .result-body { padding: 0; }
+
+    .section {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section:last-child { border-bottom: none; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      color: var(--red);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--red-light);
+    }
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 20px;
+    }
+    .fields-grid.full { grid-template-columns: 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 3px; }
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .field-value {
+      font-size: 14px;
+      color: var(--text);
+      font-weight: 500;
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+    .field-value.big {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .stt-badge {
+      display: inline-block;
+      background: var(--gold-light);
+      color: #7A5C00;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 20px;
+      border: 1px solid #E8D080;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+    }
+
+    @media (max-width: 620px) {
+      .search-card { padding: 20px 16px; }
+      .fields-grid { grid-template-columns: 1fr; }
+      .result-header { padding: 14px 16px; }
+      .section { padding: 14px 16px; }
+      .header-text h1 { font-size: 13px; }
+    }
+  </style>
+  </head>
+  <body>
+
+  <div class="header">
+    <div class="header-inner">
+      <!-- <div class="emblem">⭐</div>  logo của trang-->  
+       <img src="https://upload.wikimedia.org/wikipedia/commons/a/a3/Emblem_of_Vietnam.svg" 
+     style="width:52px;height:52px;object-fit:contain;">
+      <div class="header-text">
+        <h1>HỆ THỐNG TRA CỨU THÔNG TIN CÔNG DÂN TUỔI 17</h1>
+        <p>Nhập số Căn cước công dân và Họ tên để xem thông tin cá nhân</p>
+      </div>
+    </div>
+  </div>
+  <div class="stripe"></div>
+
+  <div class="container">
+
+    <div class="search-card">
+      <span class="search-label">Số Căn cước công dân (CCCD)</span>
+      <div class="search-row">
+        <input type="text" id="inp" maxlength="12" inputmode="numeric"
+          placeholder="Nhập 12 số CCCD..."
+          oninput="this.value=this.value.replace(/\D/g,'')"
+          onkeydown="if(event.key==='Enter')lookup()">
+      </div>
+
+      <span class="search-label" style="margin-top:14px">Họ và tên</span>
+      <input type="text" id="inp-hoten"
+        style="width:100%;height:48px;border:1.5px solid var(--border);border-radius:8px;padding:0 16px;font-family:inherit;font-size:16px;font-weight:500;color:var(--text);outline:none;background:#FAFAF8;transition:border-color .2s;"
+        placeholder="Nhập đúng họ và tên khai sinh..."
+        onkeydown="if(event.key==='Enter')lookup()"
+        onfocus="this.style.borderColor='var(--red)';this.style.background='#fff'"
+        onblur="this.style.borderColor='var(--border)';this.style.background='#FAFAF8'">
+      <button class="btn-search" onclick="lookup()" style="margin-top:12px;width:100%;justify-content:center;font-size:16px;height:52px;">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        Tra cứu
+      </button>
+
+      <div class="err-msg" id="err">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+        </svg>
+        <span id="err-text"></span>
+      </div>
+      <p class="hint">Phải nhập đúng cả số CCCD (12 chữ số) và họ tên khai sinh mới tra cứu được</p>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      Đang tra cứu dữ liệu...
+    </div>
+
+    <div class="result-card" id="result">
+      <div class="result-header">
+        <div class="avatar" id="r-avatar">?</div>
+        <div class="result-header-text">
+          <h2 id="r-name">—</h2>
+          <p id="r-cccd-disp">—</p>
+        </div>
+      </div>
+      <div class="result-body">
+
+        <div class="section">
+          <div class="section-title">Thông tin cơ bản</div>
+          <div class="fields-grid">
+            <div class="field">
+              <span class="field-label">STT</span>
+              <span class="field-value"><span class="stt-badge" id="r-stt">—</span></span>
+            </div>
+            <div class="field">
+              <span class="field-label">Số Giấy chứng nhận</span>
+              <span class="field-value" id="r-gcn">—</span>
+            </div>
+            <div class="field">
+              <span class="field-label">Số CCCD</span>
+              <span class="field-value big" id="r-cccd">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Họ tên &amp; Ngày sinh</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Họ, chữ đệm tên khai sinh / thường dùng / Ngày sinh / Số CCCD</span>
+              <span class="field-value" id="r-hoten">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Trình độ học vấn</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Trình độ văn hóa / Tốt nghiệp phổ thông / Đang học</span>
+              <span class="field-value" id="r-trinhdoVH">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Nơi cư trú &amp; làm việc</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Nơi thường trú / Nơi ở hiện nay / Nơi làm việc / Nơi đăng ký NVQS</span>
+              <span class="field-value" id="r-noicu">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Thành phần &amp; Dân tộc</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Thành phần gia đình / Bản thân / Dân tộc / Tôn giáo</span>
+              <span class="field-value" id="r-thanhphan">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Trình độ chuyên môn &amp; Gia đình</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Trình độ CMKT / Anh chị em ruột / Con thứ</span>
+              <span class="field-value" id="r-cmkt">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Thông tin cha mẹ</div>
+          <div class="fields-grid full">
+            <div class="field">
+              <span class="field-label">Họ tên cha / mẹ, năm sinh, nghề nghiệp, liệt sĩ...</span>
+              <span class="field-value" id="r-chame">—</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="footer">Hệ thống tra cứu nội bộ · Chỉ hiển thị thông tin của cá nhân tra cứu</div>
+      <div class="footer">Liên hệ thắc mắc: zalo: 09875948..@ByTri</div>
+      <div class="footer">Mọi thắc mắc liên hệ: 
+    <a href="https://www.facebook.com/share/18g8qhhaEB/?mibextid=wwXIfr" target="_blank" style="color:#572db4;">Facebook</a>
+  </div>
+
+  <!-- QR Code -->
+  <div style="text-align:center;margin-top:24px;">
+    <p style="font-size:12px;color:#aaa;margin-bottom:10px;">Quét mã QR để truy cập</p>
+    <div id="qrcode" style="display:inline-block;padding:10px;background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    new QRCode(document.getElementById("qrcode"), {
+      text: "https://www.facebook.com/share/18g8qhhaEB/?mibextid=wwXIfr",
+        // text: "https://sites.google.com/view/tuoi17xabinhmy/trang-ch%E1%BB%A7",
+
+      width: 150,
+      height: 150,
+    });
+  </script>
+
+  </div>
+
+  <script>
+  const SHEET_ID = '1W9jCo2j6lhvg7bZEtwJKEaMxqcWPwZKFyib1cyLq78s';
+  const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+
+  function show(id, val) {
+    document.getElementById(id).textContent = val || '—';
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function setErr(msg) {
+    const el = document.getElementById('err');
+    document.getElementById('err-text').textContent = msg;
+    el.style.display = 'flex';
+  }
+
+  function clearErr() {
+    document.getElementById('err').style.display = 'none';
+  }
+
+  function normalize(str) {
+    return str.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  async function lookup() {
+    const cccd   = document.getElementById('inp').value.trim();
+    const hoten  = document.getElementById('inp-hoten').value.trim();
+    clearErr();
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('loading').style.display = 'none';
+
+    if (!cccd)  { setErr('Vui lòng nhập số CCCD.'); return; }
+    if (cccd.length !== 12) { setErr('Số CCCD phải đủ 12 chữ số.'); return; }
+    if (!hoten) { setErr('Vui lòng nhập họ và tên.'); return; }
+
+    document.getElementById('loading').style.display = 'block';
+
+    try {
+      const res = await fetch(API_URL + '&t=' + Date.now());
+      const text = await res.text();
+      const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
+      const rows = json.table.rows;
+
+      // Cột B (index 1) = CCCD, cột D (index 3) = Họ tên khai sinh riêng
+      // Cột E (index 4) = thông tin gộp (tên+ngày sinh+cccd), F=trình độ, G=nơi cư trú, H=thành phần, I=CMKT, J=cha mẹ
+      const found = rows.find(r => {
+        const cellCCCD  = r.c && r.c[1];
+        const cellHoten = r.c && r.c[3];
+        if (!cellCCCD || cellCCCD.v === null) return false;
+        if (String(cellCCCD.v).trim() !== cccd) return false;
+        if (!cellHoten || cellHoten.v === null) return false;
+        return normalize(String(cellHoten.v)) === normalize(hoten);
+      });
+
+      document.getElementById('loading').style.display = 'none';
+
+      if (!found) {
+        setErr('Không tìm thấy thông tin. Kiểm tra lại số CCCD và họ tên khai sinh.'); //báo lỗi khi nhập sai cccd hoặc họ tên
+        return;
+      }
+
+      const c = found.c;
+      const get = i => (c[i] && c[i].v !== null ? String(c[i].v).trim() : '');
+
+      const stt        = get(0);
+      const cccdVal    = get(1);
+      const gcn        = get(2);
+      const hotenCol   = get(3); // cột D: họ tên khai sinh riêng
+      const hotenGop   = get(4); // cột E: tên + ngày sinh + CCCD gộp
+      const trinhdoVH  = get(5); // cột F
+      const noicu      = get(6); // cột G
+      const thanhphan  = get(7); // cột H
+      const cmkt       = get(8); // cột I
+      const chame      = get(9); // cột J
+  
+
+      const tenKhaiSinh = hotenCol || hotenGop.split('\n')[0].trim();
+
+      show('r-stt', stt);
+      show('r-gcn', gcn);
+      show('r-cccd', cccdVal);
+      show('r-name', tenKhaiSinh);
+      document.getElementById('r-cccd-disp').textContent = 'CCCD: ' + cccdVal;
+      document.getElementById('r-stt').textContent = stt ? 'STT ' + stt : '—';
+      document.getElementById('r-avatar').textContent = initials(tenKhaiSinh);
+      show('r-hoten', hotenGop);
+      show('r-trinhdoVH', trinhdoVH);
+      show('r-noicu', noicu);
+      show('r-thanhphan', thanhphan);
+      show('r-cmkt', cmkt);
+      show('r-chame', chame);
+
+      document.getElementById('result').style.display = 'block';
+
+    } catch(e) {
+      document.getElementById('loading').style.display = 'none';
+      setErr('Không thể kết nối dữ liệu. Kiểm tra lại quyền chia sẻ của kho dữ liệu.');
+    }
+  }
+  </script>
+  </body>
+  </html>
