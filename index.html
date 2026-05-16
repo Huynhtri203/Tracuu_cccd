@@ -451,8 +451,7 @@
 </div>
 
 <script>
-const SHEET_ID = '1W9jCo2j6lhvg7bZEtwJKEaMxqcWPwZKFyib1cyLq78s';
-const API_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
+const API_URL = 'https://script.google.com/macros/s/AKfycbyi4VmL5I82LckseuzSGaysLpLaRnksKZXNgz8TilkxkYody-3oMMXIcnzxE5nmyoa1/exec';
 
 function show(id, val) {
   document.getElementById(id).textContent = val || '—';
@@ -474,10 +473,6 @@ function clearErr() {
   document.getElementById('err').style.display = 'none';
 }
 
-function normalize(str) {
-  return str.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
 async function lookup() {
   const cccd    = document.getElementById('inp').value.trim();
   const hoten   = document.getElementById('inp-hoten').value.trim();
@@ -487,71 +482,48 @@ async function lookup() {
   document.getElementById('result').style.display = 'none';
   document.getElementById('loading').style.display = 'none';
 
-  if (!cccd)           { setErr('Vui lòng nhập số CCCD.'); return; }
+  if (!cccd)              { setErr('Vui lòng nhập số CCCD.'); return; }
   if (cccd.length !== 12) { setErr('Số CCCD phải đủ 12 chữ số.'); return; }
-  if (!hoten)          { setErr('Vui lòng nhập họ và tên.'); return; }
-  if (!captcha)        { setErr('Vui lòng xác nhận "Tôi không phải robot".'); return; }
+  if (!hoten)             { setErr('Vui lòng nhập họ và tên.'); return; }
+  if (!captcha)           { setErr('Vui lòng xác nhận "Tôi không phải robot".'); return; }
 
   document.getElementById('loading').style.display = 'block';
 
   try {
-    const res  = await fetch(API_URL + '&t=' + Date.now());
-    const text = await res.text();
-    const json = JSON.parse(text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, ''));
-    const rows = json.table.rows;
-
-    const found = rows.find(r => {
-      const cellCCCD  = r.c && r.c[1];
-      const cellHoten = r.c && r.c[3];
-      if (!cellCCCD || cellCCCD.v === null) return false;
-      if (String(cellCCCD.v).trim() !== cccd) return false;
-      if (!cellHoten || cellHoten.v === null) return false;
-      return normalize(String(cellHoten.v)) === normalize(hoten);
-    });
+    const url = `${API_URL}?cccd=${encodeURIComponent(cccd)}&hoten=${encodeURIComponent(hoten)}`;
+    const res  = await fetch(url);
+    const json = await res.json();
 
     document.getElementById('loading').style.display = 'none';
 
-    if (!found) {
+    if (!json.ok) {
       setErr('Không tìm thấy thông tin. Kiểm tra lại số CCCD và họ tên khai sinh.');
       grecaptcha.reset();
       return;
     }
 
-    const c   = found.c;
-    const get = i => (c[i] && c[i].v !== null ? String(c[i].v).trim() : '');
+    const d = json.data;
+    const tenKhaiSinh = d.hoten || d.hotenGop.split('\n')[0].trim();
 
-    const stt       = get(0);
-    const cccdVal   = get(1);
-    const gcn       = get(2);
-    const hotenCol  = get(3);
-    const hotenGop  = get(4);
-    const trinhdoVH = get(5);
-    const noicu     = get(6);
-    const thanhphan = get(7);
-    const cmkt      = get(8);
-    const chame     = get(9);
-
-    const tenKhaiSinh = hotenCol || hotenGop.split('\n')[0].trim();
-
-    show('r-gcn', gcn);
-    show('r-cccd', cccdVal);
+    show('r-gcn', d.gcn);
+    show('r-cccd', d.cccd);
     show('r-name', tenKhaiSinh);
-    document.getElementById('r-cccd-disp').textContent = 'CCCD: ' + cccdVal;
-    document.getElementById('r-stt').textContent = stt ? 'STT ' + stt : '—';
+    document.getElementById('r-cccd-disp').textContent = 'CCCD: ' + d.cccd;
+    document.getElementById('r-stt').textContent = d.stt ? 'STT ' + d.stt : '—';
     document.getElementById('r-avatar').textContent = initials(tenKhaiSinh);
-    show('r-hoten', hotenGop);
-    show('r-trinhdoVH', trinhdoVH);
-    show('r-noicu', noicu);
-    show('r-thanhphan', thanhphan);
-    show('r-cmkt', cmkt);
-    show('r-chame', chame);
+    show('r-hoten', d.hotenGop);
+    show('r-trinhdoVH', d.trinhdoVH);
+    show('r-noicu', d.noicu);
+    show('r-thanhphan', d.thanhphan);
+    show('r-cmkt', d.cmkt);
+    show('r-chame', d.chame);
 
     document.getElementById('result').style.display = 'block';
     grecaptcha.reset();
 
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
-    setErr('Không thể kết nối dữ liệu. Kiểm tra lại quyền chia sẻ của kho dữ liệu.');
+    setErr('Không thể kết nối dữ liệu. Vui lòng thử lại sau.');
     grecaptcha.reset();
   }
 }
